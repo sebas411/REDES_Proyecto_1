@@ -39,6 +39,6 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG,
                         format='%(levelname)-8s %(message)s')
 
-    xmpp = EchoBot('somejid@example.com', 'use_getpass')
+    xmpp = EchoBot('echobot@alumchat.xyz', 'boty')
     xmpp.connect()
     xmpp.process()
