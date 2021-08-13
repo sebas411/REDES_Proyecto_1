@@ -2,7 +2,7 @@
 
 ## Description
 
-This program was developed with the objective to learn about the xmpp protocol. It consists on 
+This program was developed with the objective to learn about the xmpp protocol. It consists on a python file named client.py. This file is used as a command line interface and has a number of custom commands listed below. Using said commands you can connect to a xmpp server, login to your account and chat with other users.
 
 ## Getting Started
 
@@ -30,7 +30,7 @@ This program was developed with the objective to learn about the xmpp protocol. 
 * login [username] [password]  
   logs into xmpp account
 
-* loggout  
+* logout  
   logs you out of the account
 
 * update  
@@ -50,6 +50,12 @@ This program was developed with the objective to learn about the xmpp protocol. 
 
 * showusers  
   shows users and presence
+
+* deleteaccount
+  deletes the current account
+
+* register [username] [password]  
+  creates a user and logs into xmpp account
 
 ## Author
 

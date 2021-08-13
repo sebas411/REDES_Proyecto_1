@@ -1,6 +1,7 @@
 import asyncio
 
 from slixmpp import ClientXMPP
+from slixmpp.exceptions import IqTimeout, IqError
 
 
 class Client(ClientXMPP):
@@ -8,10 +9,25 @@ class Client(ClientXMPP):
   def __init__(self, jid, password):
     ClientXMPP.__init__(self, jid, password)
     self.id = jid
+    self.psw = password
 
     self.add_event_handler("message", self.message)
     self.add_event_handler("session_start", self.session_start)
+    self.add_event_handler("register", self.registerusr)
 
+    self.register_plugin('xep_0030') 
+    self.register_plugin('xep_0004')
+    self.register_plugin('xep_0077')
+    self.register_plugin('xep_0199')
+    self.register_plugin('xep_0066')
+
+  async def registerusr(self, iq):
+    siq = self.Iq()
+    siq['register']['username'] = self.id.split('@')[0]
+    siq['register']['password'] = self.psw
+    siq['type'] = "set"
+    try: await siq.send()
+    except: pass
 
   #all logic goes here
   async def session_start(self, event):
@@ -23,13 +39,16 @@ class Client(ClientXMPP):
       args = commandline[1:]
 
       if command == "quit":
-        print("Please loggout first")
+        print("Please logout first")
         await self.get_roster()
 
-      elif command == "loggout":
+      elif command == "logout":
         self.disconnect()
+        await self.get_roster()
 
       elif command == "login": print("You are already logged in")
+
+      elif command == "register": print("You are already logged in")
 
       elif command == "message":
         if len(args) >= 2:
@@ -57,16 +76,47 @@ class Client(ClientXMPP):
       
       elif command == "userdetails":
         if len(args) == 1:
+          print()
           user = args[0]
-          user = self.client_roster.presence(user)
-          for pres in user.items():
-            print("%(show)s %(status)s"%(pres, pres))
+          cn = self.client_roster.presence(user)
+          if len(cn) == 0: print("user %s is away"%user)
+          else:
+            for connection in cn:
+              default = 'available'
+              if cn[connection]['show']:
+                print("user %s is"%user, cn[connection]['show'],',',cn[connection]['status'])
+              else:
+                print("user %sis"%user, default,',',cn[connection]['status'])
+          print()
         else: print("incorrect amount of arguments")
       
       elif command == "showusers":
         contacts = self.client_roster.groups()
         for contact in contacts:
-          print(contact)
+          print()
+          for user in contacts[contact]:
+            if user == self.id: continue
+            cn = self.client_roster.presence(user)
+            if len(cn) == 0: print("user %s is away"%user)
+            else:
+              for connection in cn:
+                default = 'available'
+                if cn[connection]['show']:
+                  print("user %s is"%user, cn[connection]['show'],',',cn[connection]['status'])
+                else:
+                  print("user %s is"%user, default,',',cn[connection]['status'])
+          print()
+
+      elif command == "deleteaccount":
+        iq = self.Iq()
+        #set remove
+        iq['register']['remove'] = True
+        iq['type'] = "set"
+        iq['from'] = self.id
+        iq.send()
+        #close connection
+        self.disconnect()
+        await self.get_roster()
 
       else:
         print("command not found")
@@ -82,8 +132,6 @@ async def session(user, psw):
 
 
 if __name__ == '__main__':
-  connected = False
-  xmpp = 0
 
   while True:
     commandline = input("xmppCli> ").split(' ')
@@ -92,17 +140,28 @@ if __name__ == '__main__':
     if command == "quit":
       break
     elif command == "login":
-      if connected: print("You are already logged in")
+      if len(args) >= 2:
+        user = args[0]
+        psw = args[1]
+        xmpp = Client(user, psw)
+        xmpp.connect()
+        xmpp.process(forever=False)
+        connected = True
       else:
-        if len(args) >= 2:
-          user = args[0]
-          psw = args[1]
-          xmpp = Client(user, psw)
-          xmpp.connect()
-          xmpp.process(forever=False)
-          connected = True
-        else:
-          print("command missing arguments")
+        print("command missing arguments")
+    elif command == "register":
+      if len(args) >= 2:
+        user = args[0]
+        psw = args[1]
+        xmpp = Client(user, psw)
+        #registrar
+        xmpp["xep_0077"].force_registration = True
+
+        xmpp.connect()
+        xmpp.process(forever=False)
+        connected = True
+      else:
+        print("command missing arguments")
     else:
       print("command not found or not logged in")
 
